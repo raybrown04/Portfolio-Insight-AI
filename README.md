@@ -6,8 +6,10 @@ A modern, high-performance web application that securely connects to your Alpaca
 
 - **🚀 High-Performance Portfolio Dashboard**: Real-time portfolio data with instant company name loading
 - **📊 Interactive Holdings Table**: Clickable column headers for sorting by Symbol, Company, Quantity, Price, Change, and Value
-- **🤖 AI-Powered Analysis**: Intelligent portfolio insights powered by Perplexity AI
-- **💬 Interactive Chat Interface**: Ask questions about your investments and get personalized responses
+- **⭐ Smart Watchlist**: Add AI-recommended stocks with one click and track them with real-time data
+- **🤖 Advanced AI Models**: Choose from 5 specialized Perplexity AI models for different analysis needs
+- **💬 Intelligent Chat Interface**: Contextual conversations with portfolio-aware AI assistant
+- **🎯 Specialized Research Tasks**: Pre-built prompts for growth opportunities and short squeeze analysis
 - **🔒 Secure API Integration**: Local storage of API keys with encrypted backend communication
 - **🎨 Modern UI/UX**: Beautiful, responsive interface with dark mode support
 - **⚡ Optimized Performance**: Asset caching and efficient API calls using official alpaca-py SDK
@@ -15,7 +17,18 @@ A modern, high-performance web application that securely connects to your Alpaca
 
 ## 🚀 Performance Improvements
 
-### Recent Updates (v2.0)
+### Recent Updates (v3.0) - AI Enhancement Release
+- **Advanced Model Selection**: Choose from 5 specialized Perplexity AI models:
+  - `sonar-deep-research`: Expert-level research with comprehensive reports
+  - `sonar-reasoning-pro`: Premier reasoning with DeepSeek R1 Chain of Thought
+  - `sonar-reasoning`: Fast real-time reasoning for quick problem-solving
+  - `sonar-pro`: Advanced search with 200k context length
+  - `sonar`: Lightweight, cost-effective search model
+- **Intelligent Conversation Starters**: Pre-built financial research workflows
+- **Enhanced Chat Context**: Maintains conversation history for better AI responses
+- **Secure Model Validation**: Backend security ensures only approved models are used
+
+### Previous Updates (v2.0)
 - **Migrated to alpaca-py**: Official Alpaca SDK for better performance and reliability
 - **Asset Name Caching**: 12,000+ company names cached for instant loading
 - **Sortable Table Headers**: Click any column to sort holdings by that field
@@ -123,9 +136,29 @@ The startup scripts will automatically:
 - **Account Status**: Live connection status for both APIs
 
 ### AI Assistant Features
-- **Portfolio Context**: AI has access to your current holdings and portfolio data
-- **Investment Questions**: Ask about specific stocks, portfolio analysis, or general investment topics
+- **Model Selection**: Choose the optimal AI model for your specific needs:
+  - **Deep Research**: For comprehensive market analysis and detailed reports
+  - **Reasoning Pro**: For complex financial modeling and strategic decisions  
+  - **Reasoning**: For quick analytical insights and problem-solving
+  - **Pro**: For advanced searches with extensive context
+  - **Standard**: For fast, cost-effective queries
+- **Conversation Starters**: Three specialized research workflows:
+  - **"How are my stocks doing?"**: Comprehensive portfolio analysis
+  - **"Find Growth Stock Opportunities"**: Discover high-potential investments
+  - **"Find Short Squeeze Candidates"**: Identify squeeze opportunities
+- **Portfolio Context**: AI has real-time access to your holdings and account data
+- **Contextual Conversations**: Maintains chat history for follow-up questions
 - **Real-time Insights**: Get personalized recommendations based on your portfolio
+- **⭐ One-Click Watchlist**: Click the star icon next to any stock symbol in AI recommendations to instantly add it to your watchlist
+
+### Watchlist Features
+- **Smart Stock Addition**: Click the ⭐ star icon next to any stock symbol in AI recommendations to instantly add it to your watchlist
+- **Real-Time Data**: Live current prices and daily percentage changes for all watchlist items
+- **AI Recommendation Tracking**: Store entry prices, stop losses, and target prices from AI analysis
+- **Interactive Management**: Edit or remove watchlist items with simple click actions
+- **Comprehensive View**: See Symbol, Company Name, Current Price, Daily Change, Entry Price, Stop Price, and Target Price
+- **Persistent Storage**: Your watchlist is saved locally and persists between sessions
+- **Market Data Integration**: Uses Alpaca's real-time market data API for accurate pricing
 
 ### Table Sorting
 - **Symbol**: Sort alphabetically by stock symbol
@@ -159,9 +192,13 @@ Portfolio-Insight-AI/
 - `GET /` - Main application page
 - `POST /api/connect` - Save API keys securely
 - `GET /api/portfolio` - Get portfolio data from Alpaca (with caching)
-- `POST /api/chat` - Send message to Perplexity AI
+- `POST /api/chat` - Send message to Perplexity AI with model selection and chat history
 - `GET /api/status` - Check API connection status
 - `POST /api/clear-cache` - Clear company name cache
+- `GET /api/watchlist` - Get watchlist with real-time market data
+- `POST /api/watchlist` - Add stock to watchlist
+- `DELETE /api/watchlist/<symbol>` - Remove stock from watchlist
+- `PUT /api/watchlist/<symbol>` - Update watchlist item (entry price, stop loss, target price, notes)
 
 ## 🔒 Security Features
 
@@ -184,7 +221,7 @@ Portfolio-Insight-AI/
 - **Flask==2.3.3**: Web framework
 - **python-dotenv==1.0.0**: Environment variable management
 - **flask-cors==4.0.0**: Cross-origin resource sharing
-- **requests==2.31.0**: HTTP library
+- **requests==2.31.0**: HTTP library for Perplexity AI integration
 
 ## 🔧 Troubleshooting
 
@@ -209,7 +246,13 @@ Portfolio-Insight-AI/
    - Check your internet connection
    - Verify Alpaca API access
 
-5. **"Sorting not working"**
+5. **"AI chat not working"**
+   - Verify your Perplexity API key is correct
+   - Check browser console for error messages
+   - Try switching to a different AI model (e.g., from Deep Research to Standard)
+   - Ensure you have API credits remaining
+
+6. **"Sorting not working"**
    - Ensure JavaScript is enabled
    - Check browser console for errors
    - Refresh the page if needed
@@ -257,8 +300,16 @@ This project is open source and available under the MIT License.
 
 This application is for educational and personal use only. It is not financial advice. Always do your own research before making investment decisions. The developers are not responsible for any financial losses incurred through the use of this application.
 
-## 🎉 What's New in v2.0
+## 🎉 What's New
 
+### v3.0 - AI Enhancement Release
+- **🤖 Advanced AI Models**: 5 specialized Perplexity models for different analysis needs
+- **💡 Smart Conversation Starters**: Pre-built financial research workflows
+- **🧠 Contextual Chat**: Maintains conversation history for better AI responses
+- **🔒 Model Security**: Backend validation ensures only approved models are used
+- **⚡ Optimized API**: Fixed message formatting for better Perplexity integration
+
+### v2.0 - Performance Release
 - **⚡ Performance**: 10x faster loading with alpaca-py and asset caching
 - **🎯 Usability**: Clickable table headers for intuitive sorting
 - **🔧 Reliability**: Better error handling and debugging

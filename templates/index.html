@@ -7,6 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Suppress Tailwind CSS dataset errors that don't affect functionality
+        window.addEventListener('error', function(e) {
+            if (e.filename && e.filename.includes('cdn.tailwindcss.com') && 
+                e.message && e.message.includes('dataset')) {
+                e.preventDefault();
+                console.warn('Suppressed Tailwind CSS dataset error:', e.message);
+                return true;
+            }
+        });
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -62,8 +74,21 @@
         .slide-in-left { animation: slideInLeft 0.4s ease-out; }
         @keyframes slideInLeft { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        .chat-bubble-user { border-bottom-right-radius: 0; background-color: #f3f4f6; }
-        .chat-bubble-ai { border-bottom-left-radius: 0; background-color: #2e89ff; color: white; }
+        .chat-bubble-user {
+            border-bottom-right-radius: 0;
+            background-color: #2e89ff; /* Blue */
+            color: white;
+        }
+        
+        .chat-bubble-ai {
+            border-bottom-left-radius: 0;
+            background-color: #ffffff; /* White */
+            border: 1px solid #e5e7eb; /* gray-200 */
+        }
+        
+        .chat-bubble-ai .font-medium {
+            color: #1f2937; /* Black text for "Portfolio AI Assistant" title */
+        }
         
         .holdings-table tr:nth-child(even) { background-color: #f9fafb; }
         
@@ -96,6 +121,154 @@
             background: #cbd5e1;
             border-radius: 4px;
         }
+        
+        /* Conversation starter button styles */
+        .conversation-starter-btn {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+        }
+        
+        .conversation-starter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .conversation-starter-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Dark mode support for conversation starters */
+        .dark .conversation-starter-btn {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Styling for AI-generated markdown content */
+        .formatted-response h1, .formatted-response h2, .formatted-response h3, .formatted-response h4, .formatted-response h5, .formatted-response h6,
+        .formatted-response p, .formatted-response li, .formatted-response strong {
+            color: #1f2937; /* Black text */
+        }
+
+        /* Opportunity/Stock Title headers */
+        .formatted-response h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem; /* Larger text */
+            font-weight: 700;   /* Bolder */
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Section headers (e.g., Recent News, Primary Catalyst) */
+        .formatted-response h4 {
+            margin-top: 1.25rem;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4b5563; /* Darker gray for sub-headers */
+        }
+
+        .formatted-response p {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .formatted-response ul {
+            list-style-position: inside;
+            padding-left: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .formatted-response a {
+            color: #2563eb; /* Blue for links on white background */
+            text-decoration: underline;
+        }
+
+        .formatted-response a:hover {
+            color: #1d4ed8;
+        }
+
+        /* Add significant space after a full stock analysis block */
+        .formatted-response > ol > li {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px dotted #e5e7eb;
+        }
+        .formatted-response > ol > li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .citation-link {
+            display: inline-block;
+            background-color: #e0e7ff;
+            color: #4338ca;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            vertical-align: super;
+            line-height: 1;
+            margin-left: 2px;
+        }
+
+        .citation-link:hover {
+            background-color: #e0e7ff;
+        }
+
+        .model-selector-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+            color: #374151; /* gray-700 */
+            background-color: white;
+            border: 1px solid #d1d5db; /* gray-300 */
+            transition: all 0.2s ease-in-out;
+        }
+        .model-selector-btn:hover {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        .model-selector-btn.active-model {
+            background-color: #2e89ff;
+            color: white;
+            border-color: #2e89ff;
+            z-index: 10;
+        }
+        .dark .model-selector-btn {
+            background-color: #374151; /* gray-700 */
+            border-color: #4b5563; /* gray-600 */
+            color: #f9fafb; /* gray-50 */
+        }
+        .dark .model-selector-btn:hover {
+            background-color: #4b5563;
+        }
+        .dark .model-selector-btn.active-model {
+            background-color: #0d66ff;
+            border-color: #0d66ff;
+            color: white;
+        }
+        
+        /* Star button styling for watchlist */
+        .star-button {
+            display: inline-block;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        
+        .star-button:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .star-button.added {
+            color: #f59e0b !important;
+        }
+        
+        .star-button.added:hover {
+            color: #d97706 !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-dark-950 min-h-screen">
@@ -113,6 +286,7 @@
                     <div class="hidden md:ml-10 md:flex md:space-x-8">
                         <a href="#" id="dashboard-link" class="border-b-2 border-primary-500 text-gray-900 dark:text-white px-1 pt-1 text-sm font-medium">Dashboard</a>
                         <a href="#" id="chat-link" class="border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white border-b-2 px-1 pt-1 text-sm font-medium">AI Assistant</a>
+                        <a href="#" id="watchlist-link" class="border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white border-b-2 px-1 pt-1 text-sm font-medium">Watchlist</a>
                         <a href="#" id="settings-link" class="border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white border-b-2 px-1 pt-1 text-sm font-medium">Settings</a>
                     </div>
                 </div>
@@ -156,6 +330,10 @@
                                     <i class="fas fa-caret-up mr-1"></i> 0.00% today
                                 </span>
                                 <span id="last-updated" class="ml-3 text-sm">Last updated: --</span>
+                            </div>
+                            <div class="flex items-center mt-1">
+                                <div id="auto-refresh-indicator" class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse hidden"></div>
+                                <span id="auto-refresh-text" class="text-xs text-white opacity-80">Auto-refresh: Off</span>
                             </div>
                         </div>
                         <div class="bg-white bg-opacity-20 w-12 h-12 rounded-lg flex items-center justify-center">
@@ -203,6 +381,9 @@
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Current Holdings</h3>
                         <div class="flex items-center space-x-4">
+                            <button id="refresh-portfolio" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 transition-colors" title="Refresh Portfolio Data">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
                             <button class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
                                 <i class="fas fa-filter"></i>
                             </button>
@@ -274,6 +455,31 @@
                     
                     <!-- Input area -->
                     <div class="border-t border-gray-200 dark:border-dark-800 p-4">
+                        <!-- Model Selector -->
+                        <div class="mb-4 flex items-center justify-center">
+                            <label for="model-selector" class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-3">Select Model:</label>
+                            <select id="model-selector" class="block w-52 rounded-md border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                                <option value="sonar">Quick Online</option>
+                                <option value="sonar-pro">Pro Online</option>
+                                <option value="sonar-reasoning">Standard Reasoning</option>
+                                <option value="sonar-reasoning-pro">Pro Reasoning</option>
+                                <option value="sonar-deep-research" selected>Deep Research</option>
+                            </select>
+                        </div>
+
+                        <!-- Conversation Starter Buttons -->
+                        <div class="mb-4 flex flex-wrap justify-center gap-2">
+                            <button id="how-are-stocks-btn" class="conversation-starter-btn px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg text-sm font-medium transition-colors duration-200">
+                                How are my stocks doing?
+                            </button>
+                            <button id="find-growth-btn" class="conversation-starter-btn px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-colors duration-200">
+                                Find Growth Stock Opportunities
+                            </button>
+                            <button id="find-squeeze-btn" class="conversation-starter-btn px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors duration-200">
+                                Find Short Squeeze Candidates
+                            </button>
+                        </div>
+                        
                         <div class="relative">
                             <div class="flex items-center py-1.5 px-3 bg-gray-50 dark:bg-dark-800 rounded-lg">
                                 <button class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">
@@ -288,6 +494,64 @@
                             </div>
                         </div>
                         <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-2 px-2">Powered by Perplexity AI with real-time market data from Alpaca</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Watchlist Page (Hidden by default) -->
+        <div id="watchlist-page" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Watchlist</h1>
+                    <p class="mt-1 text-gray-500 dark:text-gray-400">Track stocks recommended by AI and your own selections</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="refresh-watchlist" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-dark-700 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-800 hover:bg-gray-50 dark:hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <i class="fas fa-sync-alt mr-2"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Watchlist Table -->
+            <div class="bg-white dark:bg-dark-900 rounded-xl shadow-sm border border-gray-200 dark:border-dark-800">
+                <div class="px-6 py-5 border-b border-gray-200 dark:border-dark-800">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Watchlist Items</h3>
+                        <div class="flex items-center space-x-4">
+                            <button id="refresh-watchlist-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 transition-colors" title="Refresh Watchlist Data">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-800 watchlist-table">
+                        <thead class="bg-gray-50 dark:bg-dark-800">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="symbol">Symbol <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="company">Company <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="current_price">Current Price <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="daily_change">Daily Change <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="entry_price">Entry Price <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="stop_price">Stop Price <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="target_price">Target Price <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="watchlist-tbody" class="bg-white dark:bg-dark-900 divide-y divide-gray-200 dark:divide-dark-800">
+                            <!-- Watchlist items will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="watchlist-empty" class="hidden px-6 py-12 text-center">
+                    <div class="text-gray-400 dark:text-gray-500">
+                        <i class="fas fa-star text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Your watchlist is empty</h3>
+                        <p class="text-gray-500 dark:text-gray-400">Add stocks to your watchlist from AI recommendations or manually</p>
                     </div>
                 </div>
             </div>

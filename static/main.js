@@ -2,8 +2,12 @@
 let appState = {
     isConfigured: false,
     portfolioData: null,
+    watchlistData: null,
     chatHistory: [],
-    currentSort: { field: 'market_value', direction: 'desc' }
+    currentSort: { field: 'market_value', direction: 'desc' },
+    selectedModel: 'sonar-deep-research', // Default to the deep research model
+    autoRefreshInterval: null,
+    lastRefreshTime: null
 };
 
 // Utility functions
@@ -49,10 +53,17 @@ function formatCurrencyWithColor(amount) {
     return `<span class="${colorClass}">${sign}${formattedAmount}</span>`;
 }
 
+// Add cache-busting utility
+function getCacheBustingUrl(url) {
+    const timestamp = Date.now();
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}_t=${timestamp}`;
+}
+
 // API functions
 async function checkApiStatus() {
     try {
-        const response = await fetch('/api/status');
+        const response = await fetch(getCacheBustingUrl('/api/status'));
         const data = await response.json();
         
         if (response.ok) {
@@ -107,6 +118,9 @@ async function saveApiKeys() {
             // Load portfolio data
             await loadPortfolioData();
             
+            // Start auto-refresh
+            startAutoRefresh();
+            
             return true;
         } else {
             throw new Error(data.error || 'Failed to save API keys');
@@ -119,14 +133,20 @@ async function saveApiKeys() {
     }
 }
 
-async function loadPortfolioData() {
+async function loadPortfolioData(showLoadingIndicator = false) {
     try {
-        const response = await fetch('/api/portfolio');
+        if (showLoadingIndicator) {
+            showLoading();
+        }
+        
+        const response = await fetch(getCacheBustingUrl('/api/portfolio'));
         const data = await response.json();
         
         if (response.ok) {
             appState.portfolioData = data;
+            appState.lastRefreshTime = new Date();
             updatePortfolioDisplay(data);
+            console.log('Portfolio data refreshed successfully');
             return data;
         } else {
             throw new Error(data.error || 'Failed to load portfolio data');
@@ -135,6 +155,53 @@ async function loadPortfolioData() {
         console.error('Error loading portfolio data:', error);
         showError('Failed to load portfolio data: ' + error.message);
         return null;
+    } finally {
+        if (showLoadingIndicator) {
+            hideLoading();
+        }
+    }
+}
+
+// Auto-refresh functionality
+function startAutoRefresh() {
+    // Clear any existing interval
+    if (appState.autoRefreshInterval) {
+        clearInterval(appState.autoRefreshInterval);
+    }
+    
+    // Update UI to show auto-refresh is active
+    updateAutoRefreshIndicator(true);
+    
+    // Refresh every 30 seconds
+    appState.autoRefreshInterval = setInterval(async () => {
+        if (appState.isConfigured) {
+            await loadPortfolioData(false); // Don't show loading indicator for auto-refresh
+        }
+    }, 30000);
+}
+
+function stopAutoRefresh() {
+    if (appState.autoRefreshInterval) {
+        clearInterval(appState.autoRefreshInterval);
+        appState.autoRefreshInterval = null;
+    }
+    
+    // Update UI to show auto-refresh is off
+    updateAutoRefreshIndicator(false);
+}
+
+function updateAutoRefreshIndicator(isActive) {
+    const indicator = document.getElementById('auto-refresh-indicator');
+    const text = document.getElementById('auto-refresh-text');
+    
+    if (indicator && text) {
+        if (isActive) {
+            indicator.classList.remove('hidden');
+            text.textContent = 'Auto-refresh: On (30s)';
+        } else {
+            indicator.classList.add('hidden');
+            text.textContent = 'Auto-refresh: Off';
+        }
     }
 }
 
@@ -145,7 +212,11 @@ async function sendChatMessage(message) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({
+                prompt: message,
+                model: appState.selectedModel,
+                chat_history: appState.chatHistory
+            })
         });
         
         const data = await response.json();
@@ -161,69 +232,86 @@ async function sendChatMessage(message) {
     }
 }
 
-// UI update functions
+// UI update functions with null checks
 function updateConnectionStatus(status) {
-    // Update Alpaca status
+    // Update Alpaca status with null checks
     const alpacaStatus = document.getElementById('alpaca-connection-status');
     const accountStatus = document.getElementById('account-status');
     const alpacaMode = document.getElementById('alpaca-mode');
     
-    if (status.alpaca.configured && status.alpaca.status === 'connected') {
-        alpacaStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
-        alpacaStatus.textContent = 'Connected';
-        accountStatus.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
-        accountStatus.textContent = 'Connected';
-        alpacaMode.textContent = 'Paper Trading';
-    } else {
-        alpacaStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
-        alpacaStatus.textContent = 'Not Connected';
-        accountStatus.className = 'px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
-        accountStatus.textContent = 'Not Connected';
-        alpacaMode.textContent = '--';
+    if (alpacaStatus && accountStatus && alpacaMode) {
+        if (status.alpaca.configured && status.alpaca.status === 'connected') {
+            alpacaStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            alpacaStatus.textContent = 'Connected';
+            accountStatus.className = 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            accountStatus.textContent = 'Connected';
+            alpacaMode.textContent = 'Live Trading';
+        } else {
+            alpacaStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
+            alpacaStatus.textContent = 'Not Connected';
+            accountStatus.className = 'px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
+            accountStatus.textContent = 'Not Connected';
+            alpacaMode.textContent = '--';
+        }
     }
     
-    // Update Perplexity status
+    // Update Perplexity status with null checks
     const perplexityStatus = document.getElementById('perplexity-connection-status');
     const perplexityStatusDashboard = document.getElementById('perplexity-status');
     const aiStatus = document.getElementById('ai-status');
     
-    if (status.perplexity.configured) {
-        perplexityStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
-        perplexityStatus.textContent = 'Connected';
-        perplexityStatusDashboard.className = 'text-sm font-medium text-green-600';
-        perplexityStatusDashboard.textContent = 'Active';
-        aiStatus.className = 'px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium inline-flex items-center';
-        aiStatus.innerHTML = '<div class="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-pulse"></div><span>AI Online</span>';
-    } else {
-        perplexityStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
-        perplexityStatus.textContent = 'Not Connected';
-        perplexityStatusDashboard.className = 'text-sm font-medium text-red-600';
-        perplexityStatusDashboard.textContent = 'Not Configured';
-        aiStatus.className = 'px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium inline-flex items-center';
-        aiStatus.innerHTML = '<div class="w-2 h-2 bg-red-600 rounded-full mr-2"></div><span>AI Offline</span>';
+    if (perplexityStatus && perplexityStatusDashboard && aiStatus) {
+        if (status.perplexity.configured) {
+            perplexityStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            perplexityStatus.textContent = 'Connected';
+            perplexityStatusDashboard.className = 'text-sm font-medium text-green-600';
+            perplexityStatusDashboard.textContent = 'Active';
+            aiStatus.className = 'px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium inline-flex items-center';
+            aiStatus.innerHTML = '<div class="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-pulse"></div><span>AI Online</span>';
+        } else {
+            perplexityStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
+            perplexityStatus.textContent = 'Not Connected';
+            perplexityStatusDashboard.className = 'text-sm font-medium text-red-600';
+            perplexityStatusDashboard.textContent = 'Not Configured';
+            aiStatus.className = 'px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium inline-flex items-center';
+            aiStatus.innerHTML = '<div class="w-2 h-2 bg-red-600 rounded-full mr-2"></div><span>AI Offline</span>';
+        }
     }
 }
 
 function updatePortfolioDisplay(data) {
-    // Update portfolio summary
+    // Update portfolio summary with null checks
     const totalValue = document.getElementById('total-portfolio-value');
-    totalValue.textContent = formatCurrency(data.account.total_value);
-    totalValue.className = 'text-3xl font-bold mt-1 text-white';
-    
     const availableCash = document.getElementById('available-cash');
-    availableCash.textContent = formatCurrency(data.account.cash);
-    availableCash.className = 'text-xl font-semibold text-white';
-    
     const buyingPower = document.getElementById('buying-power');
-    buyingPower.textContent = formatCurrency(data.account.buying_power);
-    buyingPower.className = 'text-xl font-semibold text-white';
+    const lastUpdated = document.getElementById('last-updated');
+    const syncStatus = document.getElementById('sync-status');
+    
+    if (totalValue) {
+        totalValue.textContent = formatCurrency(data.account.total_value);
+        totalValue.className = 'text-3xl font-bold mt-1 text-white';
+    }
+    
+    if (availableCash) {
+        availableCash.textContent = formatCurrency(data.account.cash);
+        availableCash.className = 'text-xl font-semibold text-white';
+    }
+    
+    if (buyingPower) {
+        buyingPower.textContent = formatCurrency(data.account.buying_power);
+        buyingPower.className = 'text-xl font-semibold text-white';
+    }
     
     // Update last updated time
-    const lastUpdated = new Date(data.last_updated).toLocaleTimeString();
-    document.getElementById('last-updated').textContent = `Last updated: ${lastUpdated}`;
+    if (lastUpdated) {
+        const lastUpdatedTime = new Date(data.last_updated).toLocaleTimeString();
+        lastUpdated.textContent = `Last updated: ${lastUpdatedTime}`;
+    }
     
     // Update sync status
-    document.getElementById('sync-status').textContent = 'Last sync successful • Real-time market data enabled';
+    if (syncStatus) {
+        syncStatus.textContent = 'Last sync successful • Real-time market data enabled';
+    }
     
     // Update holdings table
     updateHoldingsTable(data.positions);
@@ -231,18 +319,24 @@ function updatePortfolioDisplay(data) {
 
 function updateHoldingsTable(positions) {
     const tbody = document.getElementById('holdings-table-body');
-    tbody.innerHTML = '';
+    if (!tbody) return;
+    
+    // Clear existing rows more safely
+    while (tbody.firstChild) {
+        tbody.removeChild(tbody.firstChild);
+    }
     
     if (positions.length === 0) {
-        tbody.innerHTML = `
-            <tr class="bg-white dark:bg-dark-900">
-                <td colspan="11" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-inbox text-2xl mb-2"></i>
-                    <p>No positions found</p>
-                    <p class="text-sm">Start trading to see your holdings here</p>
-                </td>
-            </tr>
+        const emptyRow = document.createElement('tr');
+        emptyRow.className = 'bg-white dark:bg-dark-900';
+        emptyRow.innerHTML = `
+            <td colspan="11" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-inbox text-2xl mb-2"></i>
+                <p>No positions found</p>
+                <p class="text-sm">Start trading to see your holdings here</p>
+            </td>
         `;
+        tbody.appendChild(emptyRow);
         return;
     }
     
@@ -332,13 +426,48 @@ function handleTableSort(field) {
     }
 }
 
+// Reset marked.js to its default renderer to remove the previous heading-only logic.
+marked.use({ renderer: new marked.Renderer() });
+
 function formatAIResponse(text) {
-    // Convert **text** to <strong>text</strong>
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Convert newlines to paragraphs
-    const paragraphs = text.split('\\n').map(p => p.trim()).filter(p => p.length > 0);
-    return paragraphs.map(p => `<p>${p}</p>`).join('');
+    // Use marked.js to properly render Markdown into HTML.
+    try {
+        let html = marked.parse(text);
+
+        // This regex specifically targets the "title" format from your AI's prompt,
+        // which is a bolded line like: **AVGO - Broadcom Inc. | ...**
+        // In HTML, this becomes: <p><strong>AVGO - Broadcom Inc. | ...</strong></p>
+        html = html.replace(
+            /(<p><strong>([A-Z]{2,5})\s*-\s*.*?<\/strong><\/p>)/g,
+            (match, fullTag, symbol) => {
+                const acronymBlacklist = [
+                    'BNPL', 'AI', 'CEO', 'CFO', 'COO', 'CTO', 'EPS', 'ROI', 'SEC',
+                    'FDA', 'IPO', 'USA', 'LLC', 'INC', 'AM', 'PM', 'EDIT',
+                    'IT', 'PEG', 'GPU', 'YTD', 'MTD', 'QTR'
+                ];
+
+                // Check if the captured symbol is a blacklisted acronym.
+                if (!acronymBlacklist.includes(symbol)) {
+                    // It's a valid symbol. Let's add the star.
+                    // The companyName is extracted just in case it's needed by the addStar function.
+                    const companyName = fullTag.split('-')[1]?.split('|')[0]?.trim() || '';
+                    const withStar = `${symbol} ${addStarToRecommendation(symbol, companyName)}`;
+                    return match.replace(symbol, withStar);
+                }
+                
+                // If it's a blacklisted term, return the original HTML tag without changes.
+                return match;
+            }
+        );
+
+        return html;
+    } catch (error) {
+        console.error('Error parsing markdown:', error);
+        // Fallback to basic formatting if marked.js fails.
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        const paragraphs = text.split('\\n').map(p => p.trim()).filter(p => p.length > 0);
+        return paragraphs.map(p => `<p>${p}</p>`).join('');
+    }
 }
 
 function addChatMessage(messageData, isUser = false) {
@@ -349,7 +478,7 @@ function addChatMessage(messageData, isUser = false) {
         messageDiv.className = 'flex justify-end';
         messageDiv.innerHTML = `
             <div class="max-w-4xl">
-                <div class="chat-bubble-user rounded-2xl rounded-tr-none py-3 px-4">
+                <div class="chat-bubble-user text-white rounded-2xl rounded-tr-none py-3 px-4">
                     <p class="font-medium">You</p>
                     <div class="mt-2">
                         <p>${messageData}</p>
@@ -386,7 +515,7 @@ function addChatMessage(messageData, isUser = false) {
             <div class="ml-3 max-w-4xl">
                 <div class="chat-bubble-ai rounded-2xl rounded-tl-none py-3 px-4">
                     <p class="font-medium">Portfolio AI Assistant</p>
-                    <div class="mt-2 text-white formatted-response">
+                    <div class="mt-2 formatted-response">
                         ${content}
                     </div>
                 </div>
@@ -403,13 +532,21 @@ function initializeChat() {
     chatHistory.innerHTML = '';
     
     addChatMessage(`
-        <p>Hello! I'm your Portfolio Insight AI assistant. I'm connected to your Alpaca trading account and ready to provide personalized analysis.</p>
-        <p class="mt-3">Here are some questions you might ask:</p>
+        <p>Hello! I'm your **Portfolio Insight AI** assistant. I'm connected to your Alpaca trading account and ready to provide personalized analysis.</p>
+        
+        <p class="mt-3">**Try these powerful research tools:**</p>
         <ul class="list-disc pl-5 space-y-1 mt-2">
-            <li>What's the overall risk profile of my portfolio?</li>
-            <li>Show me research and key insights on <strong>AAPL</strong></li>
-            <li>Suggest investment ideas based on my portfolio and moderate risk tolerance</li>
-            <li>Explain P/E ratio in simple terms</li>
+            <li>**Portfolio Analysis:** Get comprehensive insights on your current holdings</li>
+            <li>**Growth Opportunities:** Discover high-potential stocks with 400%+ upside targets</li>
+            <li>**Short Squeeze Alerts:** Find stocks with high short interest and squeeze potential</li>
+        </ul>
+        
+        <p class="mt-3">**Or ask me anything about:**</p>
+        <ul class="list-disc pl-5 space-y-1 mt-2">
+            <li>Risk analysis of your portfolio</li>
+            <li>Research on specific stocks like **AAPL** or **TSLA**</li>
+            <li>Investment ideas based on your risk tolerance</li>
+            <li>Market trends and sector analysis</li>
         </ul>
     `);
 }
@@ -418,33 +555,35 @@ function initializeChat() {
 function showDashboard() {
     document.getElementById('dashboard-page').classList.remove('hidden');
     document.getElementById('chat-page').classList.add('hidden');
+    document.getElementById('watchlist-page').classList.add('hidden');
     document.getElementById('settings-page').classList.add('hidden');
     
     // Update navigation
-    document.querySelectorAll('#dashboard-link').forEach(el => {
-        el.classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
-    document.querySelectorAll('#chat-link, #settings-link').forEach(el => {
-        el.classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
+    document.getElementById('dashboard-link').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('dashboard-link').classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('chat-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('chat-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('watchlist-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('watchlist-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('settings-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('settings-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
 }
 
 function showChat() {
     document.getElementById('dashboard-page').classList.add('hidden');
     document.getElementById('chat-page').classList.remove('hidden');
+    document.getElementById('watchlist-page').classList.add('hidden');
     document.getElementById('settings-page').classList.add('hidden');
     
     // Update navigation
-    document.querySelectorAll('#chat-link').forEach(el => {
-        el.classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
-    document.querySelectorAll('#dashboard-link, #settings-link').forEach(el => {
-        el.classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
+    document.getElementById('dashboard-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('dashboard-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('chat-link').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('chat-link').classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('watchlist-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('watchlist-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('settings-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('settings-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
     
     // Initialize chat if not already done
     if (document.getElementById('chat-history').children.length === 0) {
@@ -455,17 +594,255 @@ function showChat() {
 function showSettings() {
     document.getElementById('dashboard-page').classList.add('hidden');
     document.getElementById('chat-page').classList.add('hidden');
+    document.getElementById('watchlist-page').classList.add('hidden');
     document.getElementById('settings-page').classList.remove('hidden');
     
     // Update navigation
-    document.querySelectorAll('#settings-link').forEach(el => {
-        el.classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
-    document.querySelectorAll('#dashboard-link, #chat-link').forEach(el => {
-        el.classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
-        el.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
-    });
+    document.getElementById('dashboard-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('dashboard-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('chat-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('chat-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('watchlist-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('watchlist-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('settings-link').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('settings-link').classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+}
+
+function showWatchlist() {
+    document.getElementById('dashboard-page').classList.add('hidden');
+    document.getElementById('chat-page').classList.add('hidden');
+    document.getElementById('watchlist-page').classList.remove('hidden');
+    document.getElementById('settings-page').classList.add('hidden');
+    
+    // Update navigation
+    document.getElementById('dashboard-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('dashboard-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('chat-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('chat-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('watchlist-link').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    document.getElementById('watchlist-link').classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('settings-link').classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+    document.getElementById('settings-link').classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+    
+    // Load watchlist data
+    loadWatchlistData();
+}
+
+// Watchlist functions
+async function loadWatchlistData(showLoadingIndicator = false) {
+    try {
+        if (showLoadingIndicator) {
+            showLoading();
+        }
+        
+        const response = await fetch(getCacheBustingUrl('/api/watchlist'));
+        const data = await response.json();
+        
+        if (response.ok) {
+            updateWatchlistDisplay(data.watchlist);
+            appState.watchlistData = data.watchlist;
+            return data.watchlist;
+        } else {
+            throw new Error(data.error || 'Failed to load watchlist data');
+        }
+    } catch (error) {
+        console.error('Error loading watchlist data:', error);
+        showError('Failed to load watchlist data: ' + error.message);
+        return null;
+    } finally {
+        if (showLoadingIndicator) {
+            hideLoading();
+        }
+    }
+}
+
+function updateWatchlistDisplay(watchlist) {
+    const tbody = document.getElementById('watchlist-tbody');
+    const emptyDiv = document.getElementById('watchlist-empty');
+    
+    if (!watchlist || watchlist.length === 0) {
+        tbody.innerHTML = '';
+        emptyDiv.classList.remove('hidden');
+        return;
+    }
+    
+    emptyDiv.classList.add('hidden');
+    
+    tbody.innerHTML = watchlist.map(item => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-dark-800">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                ${item.symbol}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                ${item.company_name || 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                ${item.current_price ? formatCurrency(item.current_price) : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                ${item.daily_change !== null ? formatPercent(item.daily_change) : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                ${item.entry_price ? formatCurrency(item.entry_price) : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                ${item.stop_price ? formatCurrency(item.stop_price) : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                ${item.target_price ? formatCurrency(item.target_price) : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <div class="flex items-center justify-center space-x-2">
+                    <button onclick="editWatchlistItem('${item.symbol}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="removeFromWatchlist('${item.symbol}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function addToWatchlist(symbol, companyName = '', entryPrice = null, stopPrice = null, targetPrice = null, notes = '') {
+    try {
+        const response = await fetch('/api/watchlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                symbol: symbol,
+                company_name: companyName,
+                entry_price: entryPrice,
+                stop_price: stopPrice,
+                target_price: targetPrice,
+                notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Refresh watchlist if we're on the watchlist page
+            if (!document.getElementById('watchlist-page').classList.contains('hidden')) {
+                await loadWatchlistData();
+            }
+            return { success: true, message: data.message };
+        } else {
+            throw new Error(data.error || 'Failed to add to watchlist');
+        }
+    } catch (error) {
+        console.error('Error adding to watchlist:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+async function removeFromWatchlist(symbol) {
+    if (!confirm(`Are you sure you want to remove ${symbol} from your watchlist?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/watchlist/${symbol}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            await loadWatchlistData();
+            return { success: true, message: data.message };
+        } else {
+            throw new Error(data.error || 'Failed to remove from watchlist');
+        }
+    } catch (error) {
+        console.error('Error removing from watchlist:', error);
+        showError('Failed to remove from watchlist: ' + error.message);
+        return { success: false, message: error.message };
+    }
+}
+
+function editWatchlistItem(symbol) {
+    // For now, just show a simple prompt. In a full implementation, you'd want a modal
+    const item = appState.watchlistData?.find(item => item.symbol === symbol);
+    if (!item) return;
+    
+    const entryPrice = prompt('Enter price (or leave empty):', item.entry_price || '');
+    const stopPrice = prompt('Stop price (or leave empty):', item.stop_price || '');
+    const targetPrice = prompt('Target price (or leave empty):', item.target_price || '');
+    const notes = prompt('Notes (or leave empty):', item.notes || '');
+    
+    if (entryPrice !== null) { // User didn't cancel
+        updateWatchlistItem(symbol, {
+            entry_price: entryPrice ? parseFloat(entryPrice) : null,
+            stop_price: stopPrice ? parseFloat(stopPrice) : null,
+            target_price: targetPrice ? parseFloat(targetPrice) : null,
+            notes: notes
+        });
+    }
+}
+
+async function updateWatchlistItem(symbol, updates) {
+    try {
+        const response = await fetch(`/api/watchlist/${symbol}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updates)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            await loadWatchlistData();
+            return { success: true, message: data.message };
+        } else {
+            throw new Error(data.error || 'Failed to update watchlist item');
+        }
+    } catch (error) {
+        console.error('Error updating watchlist item:', error);
+        showError('Failed to update watchlist item: ' + error.message);
+        return { success: false, message: error.message };
+    }
+}
+
+// Function to add star button to AI recommendations
+function addStarToRecommendation(symbol, companyName = '') {
+    return `<button onclick="addRecommendedStock('${symbol}', '${companyName}')" class="star-button text-gray-400 hover:text-yellow-500 transition-colors ml-2" title="Add ${symbol} to watchlist">
+        <i class="far fa-star"></i>
+    </button>`;
+}
+
+async function addRecommendedStock(symbol, companyName = '') {
+    const result = await addToWatchlist(symbol, companyName);
+    if (result.success) {
+        // Show success message and update button
+        const starButton = event.target.closest('button');
+        if (starButton) {
+            starButton.innerHTML = '<i class="fas fa-star"></i>';
+            starButton.classList.add('added');
+            starButton.title = `${symbol} added to watchlist`;
+            starButton.onclick = null; // Disable further clicks
+            
+            // Show a brief success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            successMsg.textContent = `${symbol} added to watchlist!`;
+            document.body.appendChild(successMsg);
+            
+            // Remove the message after 3 seconds
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.parentNode.removeChild(successMsg);
+                }
+            }, 3000);
+        }
+    } else {
+        showError(result.message);
+    }
 }
 
 // Event listeners
@@ -479,6 +856,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('chat-link').addEventListener('click', (e) => {
         e.preventDefault();
         showChat();
+    });
+    
+    document.getElementById('watchlist-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        showWatchlist();
     });
     
     document.getElementById('settings-link').addEventListener('click', (e) => {
@@ -498,27 +880,96 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    // Password toggle buttons
+        // Password toggle buttons with null checks
     document.querySelectorAll('.toggle-password').forEach(button => {
         button.addEventListener('click', (e) => {
-            const targetId = e.target.closest('button').dataset.target;
-            const input = document.getElementById(targetId);
-            const icon = e.target.closest('button').querySelector('i');
+            const closestButton = e.target.closest('button');
+            if (!closestButton || !closestButton.dataset) return;
             
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'far fa-eye-slash';
-            } else {
-                input.type = 'password';
-                icon.className = 'far fa-eye';
+            const targetId = closestButton.dataset.target;
+            if (!targetId) return;
+            
+            const input = document.getElementById(targetId);
+            const icon = closestButton.querySelector('i');
+            
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'far fa-eye-slash';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'far fa-eye';
+                }
             }
         });
     });
+
+    // Portfolio refresh button
+    const refreshButton = document.getElementById('refresh-portfolio');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', async () => {
+            const icon = refreshButton.querySelector('i');
+            refreshButton.disabled = true;
+            
+            if (icon) {
+                icon.classList.add('animate-spin');
+            }
+            
+            try {
+                await loadPortfolioData(false); // Use auto-refresh style (no modal loading)
+            } finally {
+                // Remove spinning animation
+                if (icon) {
+                    icon.classList.remove('animate-spin');
+                }
+                refreshButton.disabled = false;
+            }
+        });
+    }
     
-    // Portfolio refresh
-    document.getElementById('refresh-portfolio').addEventListener('click', async () => {
-        await loadPortfolioData();
-    });
+    // Watchlist refresh button
+    const refreshWatchlistButton = document.getElementById('refresh-watchlist');
+    if (refreshWatchlistButton) {
+        refreshWatchlistButton.addEventListener('click', async () => {
+            const icon = refreshWatchlistButton.querySelector('i');
+            refreshWatchlistButton.disabled = true;
+            
+            if (icon) {
+                icon.classList.add('animate-spin');
+            }
+            
+            try {
+                await loadWatchlistData(false);
+            } finally {
+                if (icon) {
+                    icon.classList.remove('animate-spin');
+                }
+                refreshWatchlistButton.disabled = false;
+            }
+        });
+    }
+    
+    // Watchlist table refresh button
+    const refreshWatchlistTableButton = document.getElementById('refresh-watchlist-btn');
+    if (refreshWatchlistTableButton) {
+        refreshWatchlistTableButton.addEventListener('click', async () => {
+            const icon = refreshWatchlistTableButton.querySelector('i');
+            refreshWatchlistTableButton.disabled = true;
+            
+            if (icon) {
+                icon.classList.add('animate-spin');
+            }
+            
+            try {
+                await loadWatchlistData(false);
+            } finally {
+                if (icon) {
+                    icon.classList.remove('animate-spin');
+                }
+                refreshWatchlistTableButton.disabled = false;
+            }
+        });
+    }
     
     // Chat functionality
     document.getElementById('send-message').addEventListener('click', async () => {
@@ -527,19 +978,56 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!message) return;
         
+        // Add user message to UI
         addChatMessage(message, true);
+        
         input.value = '';
         input.disabled = true;
         
         try {
             const aiResponse = await sendChatMessage(message);
             addChatMessage(aiResponse, false);
+            
+            // Add user message and AI response to chat history
+            appState.chatHistory.push({
+                role: 'user',
+                content: message
+            });
+            appState.chatHistory.push({
+                role: 'assistant',
+                content: aiResponse.response
+            });
         } catch (error) {
             showError('The AI assistant is currently unavailable. Please try again later.');
         } finally {
             input.disabled = false;
             input.focus();
         }
+    });
+    
+    // Model Selector Logic
+    const modelSelector = document.getElementById('model-selector');
+    modelSelector.addEventListener('change', (e) => {
+        appState.selectedModel = e.target.value;
+    });
+    
+    // Conversation starter buttons
+    document.getElementById('how-are-stocks-btn').addEventListener('click', () => {
+        const input = document.getElementById('message-input');
+        input.value = 'How are my stocks doing?';
+        document.getElementById('send-message').click();
+    });
+    
+    document.getElementById('find-growth-btn').addEventListener('click', () => {
+        const input = document.getElementById('message-input');
+        input.value = 'Find Growth Stock Opportunities';
+        document.getElementById('send-message').click();
+    });
+    
+    document.getElementById('find-squeeze-btn').addEventListener('click', () => {
+        const input = document.getElementById('message-input');
+        input.value = 'Find Short Squeeze Candidates';
+        document.getElementById('send-message').click();
     });
     
     // Auto-resize textarea
@@ -560,13 +1048,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Error modal
     document.getElementById('close-error-modal').addEventListener('click', hideError);
     
-    // Table sorting
+    // Table sorting with null checks
     document.querySelectorAll('.sortable-header').forEach(header => {
         header.addEventListener('click', (e) => {
             // Prevent sorting if the resizer handle is clicked
             if (e.target.classList.contains('resizer')) {
                 return;
             }
+            
+            // Add null check for dataset
+            if (!header.dataset) return;
+            
             const field = header.dataset.sort;
             if (field) {
                 handleTableSort(field);
@@ -576,6 +1068,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Initialize app
     await initializeApp();
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (appState.autoRefreshInterval) {
+            clearInterval(appState.autoRefreshInterval);
+        }
+    });
 });
 
 let isResizing = false;
@@ -620,6 +1119,10 @@ function initializeTableSorting() {
             if (isResizing) {
                 return;
             }
+            
+            // Add null check for dataset
+            if (!header.dataset) return;
+            
             const field = header.dataset.sort;
             if (field) {
                 handleTableSort(field);
@@ -635,6 +1138,7 @@ async function initializeApp() {
     if (status && status.alpaca.configured) {
         appState.isConfigured = true;
         await loadPortfolioData();
+        startAutoRefresh(); // Start auto-refresh for configured apps
         showDashboard();
     } else {
         showSettings();
@@ -643,6 +1147,13 @@ async function initializeApp() {
     initializeResizableColumns();
     initializeTableSorting();
     initializeChat();
+    
+    // Ensure all elements with dataset attributes are properly initialized
+    document.querySelectorAll('[data-sort]').forEach(element => {
+        if (!element.dataset) {
+            element.dataset = {};
+        }
+    });
     
     // Hide loading screen after everything is initialized
     hideLoading();
