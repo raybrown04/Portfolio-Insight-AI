@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Insight AI | Smart Portfolio Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef7ff',
+                            100: '#d9ecff',
+                            200: '#badfff',
+                            300: '#8bccff',
+                            400: '#54aeff',
+                            500: '#2e89ff',
+                            600: '#0d66ff',
+                            700: '#0b52e1',
+                            800: '#1143b6',
+                            900: '#133e8f',
+                        },
+                        secondary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            50: '#f7f7f8',
+                            100: '#efeff0',
+                            200: '#dcdcde',
+                            300: '#c0c0c4',
+                            400: '#9b9ca2',
+                            500: '#777880',
+                            600: '#5d5f68',
+                            700: '#4b4d58',
+                            800: '#3d404c',
+                            900: '#343743',
+                            950: '#22242e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .slide-in-left { animation: slideInLeft 0.4s ease-out; }
+        @keyframes slideInLeft { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .chat-bubble-user { border-bottom-right-radius: 0; background-color: #f3f4f6; }
+        .chat-bubble-ai { border-bottom-left-radius: 0; background-color: #2e89ff; color: white; }
+        
+        .holdings-table tr:nth-child(even) { background-color: #f9fafb; }
+        
+        .portfolio-card {
+            background: linear-gradient(135deg, #2e89ff 0%, #0ea5e9 100%);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(46, 137, 255, 0.2);
+        }
+        
+        .card-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        }
+        
+        .api-card {
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-dark-950 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="bg-primary-500 w-8 h-8 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-white text-lg"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-bold text-gray-900 dark:text-white">Portfolio Insight<span class="text-primary-600">AI</span></span>
+                    </div>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="#" id="dashboard-link" class="border-b-2 border-primary-500 text-gray-900 dark:text-white px-1 pt-1 text-sm font-medium">Dashboard</a>
+                        <a href="#" id="chat-link" class="border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white border-b-2 px-1 pt-1 text-sm font-medium">AI Assistant</a>
+                        <a href="#" id="settings-link" class="border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white border-b-2 px-1 pt-1 text-sm font-medium">Settings</a>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex items-center">
+                    <div class="relative">
+                        <button class="rounded-full border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 flex text-sm">
+                            <img class="h-8 w-8 rounded-full" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23cbd5e1' stroke-width='1.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10s10-4.477 10-10S17.523 2 12 2Z'/%3E%3Cpath d='M4 20l3.5-4m9-4c0 1.657-1.567 3-3.5 3s-3.5-1.343-3.5-3s1.567-3 3.5-3s3.5 1.343 3.5 3Z'/%3E%3C/g%3E%3C/svg%3E" alt="User profile">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main content container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Dashboard Page (Default View) -->
+        <div id="dashboard-page">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Portfolio Dashboard</h1>
+                    <p class="mt-1 text-gray-500 dark:text-gray-400">Real-time overview of your investment portfolio</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="refresh-portfolio" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-dark-700 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-800 hover:bg-gray-50 dark:hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <i class="fas fa-sync-alt mr-2"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Portfolio Summary Card -->
+                <div class="portfolio-card lg:col-span-2 p-6 text-white">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-medium">Total Portfolio Value</h2>
+                            <p id="total-portfolio-value" class="text-3xl font-bold mt-1">$0.00</p>
+                            <div class="flex items-center mt-2">
+                                <span id="portfolio-change" class="bg-white bg-opacity-20 px-2 py-1 rounded-md text-xs font-medium">
+                                    <i class="fas fa-caret-up mr-1"></i> 0.00% today
+                                </span>
+                                <span id="last-updated" class="ml-3 text-sm">Last updated: --</span>
+                            </div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-wallet text-white text-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-8">
+                        <div>
+                            <p class="text-sm text-white">Available Cash</p>
+                            <p id="available-cash" class="text-xl font-semibold text-white">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-white">Buying Power</p>
+                            <p id="buying-power" class="text-xl font-semibold text-white">$0.00</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Account Status Card -->
+                <div class="card-gradient p-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Account Status</h3>
+                        <span id="account-status" class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Connected</span>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">Alpaca Mode</span>
+                            <span id="alpaca-mode" class="text-sm font-medium">--</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">Perplexity AI</span>
+                            <span id="perplexity-status" class="text-sm font-medium text-red-600">Not Configured</span>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-200 dark:border-dark-700">
+                        <p id="sync-status" class="text-xs text-gray-500 dark:text-gray-400">Please configure your API keys to start</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current Holdings Section -->
+            <div class="bg-white dark:bg-dark-900 rounded-xl shadow-sm border border-gray-200 dark:border-dark-800">
+                <div class="px-6 py-5 border-b border-gray-200 dark:border-dark-800">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Current Holdings</h3>
+                        <div class="flex items-center space-x-4">
+                            <button class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-800 holdings-table" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: auto;"> <!-- Symbol -->
+                            <col id="company-col" style="width: 250px;"> <!-- Company -->
+                            <col style="width: auto;"> <!-- Qty -->
+                            <col style="width: auto;"> <!-- Market Value -->
+                            <col style="width: auto;"> <!-- Avg Entry -->
+                            <col style="width: auto;"> <!-- Cost Basis -->
+                            <col style="width: auto;"> <!-- Today's P/L % -->
+                            <col style="width: auto;"> <!-- Today's P/L $ -->
+                            <col style="width: auto;"> <!-- Total P/L % -->
+                            <col style="width: auto;"> <!-- Total P/L $ -->
+                            <col style="width: auto;"> <!-- Action -->
+                        </colgroup>
+                        <thead class="bg-gray-50 dark:bg-dark-800">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="symbol">Symbol <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header resizable-col" data-sort="company" style="position: relative;">
+                                    Company <i class="fas fa-sort ml-1"></i>
+                                    <div class="resizer" style="display: inline-block; background: #ccc; width: 2px; height: 16px; position: absolute; right: 0; top: 12px; cursor: col-resize;"></div>
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="quantity">Qty <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="market_value">Market Value <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="avg_entry_price">Avg Entry <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="cost_basis">Cost Basis <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="todays_pl_pc">Today's P/L (%) <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="todays_pl">Today's P/L ($) <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="total_pl_pc">Total P/L (%) <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 sortable-header" data-sort="total_pl">Total P/L ($) <i class="fas fa-sort ml-1"></i></th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-table-body" class="bg-white dark:bg-dark-900 divide-y divide-gray-200 dark:divide-dark-800">
+                            <!-- Holdings will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Chat Interface (Hidden by default) -->
+        <div id="chat-page" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Portfolio AI Assistant</h1>
+                    <p class="mt-1 text-gray-500 dark:text-gray-400">Get real-time insights about your portfolio and the market</p>
+                </div>
+                <div>
+                    <div id="ai-status" class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium inline-flex items-center">
+                        <div class="w-2 h-2 bg-red-600 rounded-full mr-2"></div>
+                        <span>AI Offline</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-dark-900 rounded-xl shadow-sm border border-gray-200 dark:border-dark-800 overflow-hidden">
+                <div class="h-[700px] flex flex-col">
+                    <!-- Chat messages container -->
+                    <div id="chat-history" class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <!-- Initial AI message will be added by JavaScript -->
+                    </div>
+                    
+                    <!-- Input area -->
+                    <div class="border-t border-gray-200 dark:border-dark-800 p-4">
+                        <div class="relative">
+                            <div class="flex items-center py-1.5 px-3 bg-gray-50 dark:bg-dark-800 rounded-lg">
+                                <button class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <div class="relative flex-1">
+                                    <textarea id="message-input" rows="1" class="block w-full resize-none bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="Ask about your portfolio..."></textarea>
+                                </div>
+                                <button id="send-message" class="p-2 text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-2 px-2">Powered by Perplexity AI with real-time market data from Alpaca</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings/Onboarding Page (Hidden by default) -->
+        <div id="settings-page" class="hidden">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Connect Your Accounts</h1>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">Securely connect your Alpaca trading account and Perplexity AI to start getting portfolio insights</p>
+            </div>
+            
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white dark:bg-dark-900 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-dark-800">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">API Key Setup</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">These keys are stored securely encrypted and never exposed in client-side code.</p>
+                    
+                    <form id="api-setup-form" class="space-y-8">
+                        <!-- Alpaca API Card -->
+                        <div class="api-card p-6 space-y-6">
+                            <div class="flex items-center justify-between flex-wrap gap-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0 bg-gray-200 dark:bg-dark-700 rounded-xl w-12 h-12 flex items-center justify-center">
+                                        <i class="fas fa-chart-line text-gray-600 dark:text-gray-400"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-900 dark:text-white">Alpaca Account</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Paper or Live Trading</p>
+                                    </div>
+                                </div>
+                                <span id="alpaca-connection-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Connected</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="alpaca-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Alpaca API Key</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <input type="password" id="alpaca-api-key" name="alpaca_api_key" class="block w-full pr-10 py-2.5 border-gray-300 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:text-white text-sm" placeholder="Paste your API key" required>
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                            <button type="button" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 toggle-password" data-target="alpaca-api-key">
+                                                <i class="far fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="alpaca-secret-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Alpaca Secret Key</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <input type="password" id="alpaca-secret-key" name="alpaca_secret_key" class="block w-full pr-10 py-2.5 border-gray-300 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:text-white text-sm" placeholder="Paste your secret key" required>
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                            <button type="button" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 toggle-password" data-target="alpaca-secret-key">
+                                                <i class="far fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 border-t border-gray-200 dark:border-dark-700">
+                                <a href="https://alpaca.markets/docs/get-started-with-alpaca/" target="_blank" class="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 inline-flex items-center">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    How to get Alpaca API keys
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Perplexity API Card -->
+                        <div class="api-card p-6 space-y-6">
+                            <div class="flex items-center justify-between flex-wrap gap-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0 bg-purple-100 dark:bg-purple-900 rounded-xl w-12 h-12 flex items-center justify-center">
+                                        <i class="fas fa-brain text-purple-600 dark:text-purple-400 text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-900 dark:text-white">Perplexity AI</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">AI Research & Analysis</p>
+                                    </div>
+                                </div>
+                                <span id="perplexity-connection-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Connected</span>
+                            </div>
+                            
+                            <div>
+                                <label for="perplexity-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Perplexity API Key</label>
+                                <div class="relative rounded-md shadow-sm">
+                                    <input type="password" id="perplexity-api-key" name="perplexity_api_key" class="block w-full pr-10 py-2.5 border-gray-300 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:text-white text-sm" placeholder="Paste your API key" required>
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <button type="button" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 toggle-password" data-target="perplexity-api-key">
+                                            <i class="far fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 border-t border-gray-200 dark:border-dark-700">
+                                <a href="https://docs.perplexity.ai/" target="_blank" class="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 inline-flex items-center">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    How to get Perplexity API keys
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-dark-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">Your API keys are stored securely encrypted</span>
+                        </div>
+                        <button id="save-api-keys" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            <i class="fas fa-save mr-2"></i> Save API Keys
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+            <span class="text-gray-700">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex items-center mb-4">
+                <div class="bg-red-100 rounded-full p-2 mr-3">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900">Error</h3>
+            </div>
+            <p id="error-message" class="text-gray-600 mb-6"></p>
+            <div class="flex justify-end">
+                <button id="close-error-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

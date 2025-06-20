@@ -1,0 +1,242 @@
+body {
+	padding: 2rem;
+	font-family: -apple-system, BlinkMacSystemFont, "Arial", sans-serif;
+}
+
+h1 {
+	font-size: 16px;
+	margin-top: 0;
+}
+
+p {
+	color: rgb(107, 114, 128);
+	font-size: 15px;
+	margin-bottom: 10px;
+	margin-top: 5px;
+}
+
+.card {
+	max-width: 620px;
+	margin: 0 auto;
+	padding: 16px;
+	border: 1px solid lightgray;
+	border-radius: 16px;
+}
+
+.card p:last-child {
+	margin-bottom: 0;
+}
+
+/* Additional custom styles for Portfolio Insight AI */
+
+/* Custom scrollbar for chat */
+.chat-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Fade in animation for new content */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Pulse animation for status indicators */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom focus styles */
+.focus-ring:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #2e89ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .portfolio-card {
+        margin-bottom: 1rem;
+    }
+    
+    .holdings-table {
+        font-size: 0.875rem;
+    }
+    
+    .chat-bubble-ai,
+    .chat-bubble-user {
+        max-width: 85%;
+    }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+    .card-gradient {
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        border-color: #374151;
+    }
+    
+    .api-card {
+        background-color: #1f2937;
+        border-color: #4b5563;
+    }
+}
+
+/* Settings page specific styles */
+.api-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.api-card:hover {
+    border-color: #2e89ff;
+    box-shadow: 0 4px 6px -1px rgba(46, 137, 255, 0.1), 0 2px 4px -1px rgba(46, 137, 255, 0.06);
+}
+
+.api-card input {
+    transition: all 0.2s ease-in-out;
+}
+
+.api-card input:focus {
+    border-color: #2e89ff;
+    box-shadow: 0 0 0 2px rgba(46, 137, 255, 0.1);
+}
+
+/* Responsive adjustments for settings page */
+@media (max-width: 640px) {
+    .api-card {
+        padding: 1rem;
+    }
+    
+    .api-card .flex-wrap {
+        gap: 0.5rem;
+    }
+    
+    #settings-page .max-w-2xl {
+        margin: 0 1rem;
+    }
+}
+
+/* Dark mode enhancements for settings page */
+@media (prefers-color-scheme: dark) {
+    .api-card:hover {
+        border-color: #4b5563;
+        box-shadow: 0 4px 6px -1px rgba(75, 85, 99, 0.1), 0 2px 4px -1px rgba(75, 85, 99, 0.06);
+    }
+    
+    .api-card input:focus {
+        border-color: #2e89ff;
+        box-shadow: 0 0 0 2px rgba(46, 137, 255, 0.2);
+    }
+}
+
+/* Sortable table headers */
+.sortable-header {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+}
+
+.sortable-header:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.sortable-header:hover i {
+    color: #2e89ff;
+}
+
+.sortable-header i {
+    transition: all 0.2s ease-in-out;
+    opacity: 0.5;
+}
+
+.sortable-header:hover i {
+    opacity: 1;
+}
+
+.sortable-header .fas.fa-sort-up,
+.sortable-header .fas.fa-sort-down {
+    opacity: 1;
+    color: #2e89ff;
+}
+
+/* Dark mode for sortable headers */
+@media (prefers-color-scheme: dark) {
+    .sortable-header:hover {
+        background-color: #374151 !important;
+    }
+    
+    .sortable-header:hover i {
+        color: #60a5fa;
+    }
+    
+    .sortable-header .fas.fa-sort-up,
+    .sortable-header .fas.fa-sort-down {
+        color: #60a5fa;
+    }
+}
+
+/* AI Chat response formatting */
+.formatted-response p {
+    margin-bottom: 0.75rem;
+}
+
+.formatted-response strong {
+    font-weight: 600;
+}
+
+.citation-link {
+    display: inline-block;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.citation-link:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
