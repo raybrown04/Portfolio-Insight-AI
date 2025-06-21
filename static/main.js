@@ -430,15 +430,18 @@ function handleTableSort(field) {
 marked.use({ renderer: new marked.Renderer() });
 
 function formatAIResponse(text) {
+    // Store the current response text globally for analysis capture
+    window.currentAIResponse = text;
+    
     // Use marked.js to properly render Markdown into HTML.
     try {
         let html = marked.parse(text);
 
-        // This regex specifically targets the "title" format from your AI's prompt,
-        // which is a bolded line like: **AVGO - Broadcom Inc. | ...**
-        // In HTML, this becomes: <p><strong>AVGO - Broadcom Inc. | ...</strong></p>
+        // This regex targets title lines, handling both bolded and non-bolded formats.
+        // It looks for a structure like: <p>SYMBOL - Company Name | ...</p>
         html = html.replace(
-            /(<p><strong>([A-Z]{2,5})\s*-\s*.*?<\/strong><\/p>)/g,
+            // The regex captures the entire <p> tag (group 1) and the symbol (group 2).
+            /(<p(?: dir="auto")?>(?:<strong>)?([A-Z]{2,5})\s*[-–]\s*.*?(?:<\/strong>)?<\/p>)/g,
             (match, fullTag, symbol) => {
                 const acronymBlacklist = [
                     'BNPL', 'AI', 'CEO', 'CFO', 'COO', 'CTO', 'EPS', 'ROI', 'SEC',
@@ -449,9 +452,12 @@ function formatAIResponse(text) {
                 // Check if the captured symbol is a blacklisted acronym.
                 if (!acronymBlacklist.includes(symbol)) {
                     // It's a valid symbol. Let's add the star.
-                    // The companyName is extracted just in case it's needed by the addStar function.
-                    const companyName = fullTag.split('-')[1]?.split('|')[0]?.trim() || '';
+                    // To safely get the company name, we strip HTML tags from the matched string.
+                    const plainText = fullTag.replace(/<[^>]*>/g, "");
+                    const companyName = plainText.split(/[-–]/)[1]?.split('|')[0]?.trim() || '';
                     const withStar = `${symbol} ${addStarToRecommendation(symbol, companyName)}`;
+
+                    // Replace the first occurrence of the symbol within the matched HTML tag.
                     return match.replace(symbol, withStar);
                 }
                 
@@ -668,44 +674,63 @@ function updateWatchlistDisplay(watchlist) {
     
     emptyDiv.classList.add('hidden');
     
-    tbody.innerHTML = watchlist.map(item => `
-        <tr class="hover:bg-gray-50 dark:hover:bg-dark-800">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                ${item.symbol}
+    tbody.innerHTML = watchlist.map(item => {
+        const hasAnalysis = item.ai_analysis && item.ai_analysis.trim() !== '';
+        const analysisIcon = hasAnalysis ? 'fas fa-chart-line text-blue-500' : 'fas fa-chart-line text-gray-300';
+        const analysisTitle = hasAnalysis ? 'Click to view AI analysis' : 'No AI analysis available';
+        
+        return `
+        <tr class="watchlist-row hover:bg-gray-50 dark:hover:bg-dark-800 transition-colors" data-symbol="${item.symbol}">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <button class="symbol-expand-btn text-left font-medium text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors flex items-center" 
+                            onclick="toggleAnalysis('${item.symbol}')" 
+                            title="${analysisTitle}">
+                        <i class="${analysisIcon} mr-2"></i>
+                        <span class="font-semibold">${item.symbol}</span>
+                        ${hasAnalysis ? '<i class="fas fa-chevron-down ml-2 text-xs text-gray-400"></i>' : ''}
+                    </button>
+                </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                ${item.company_name || 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                ${item.current_price ? formatCurrency(item.current_price) : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                ${item.daily_change !== null ? formatPercent(item.daily_change) : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                ${item.entry_price ? formatCurrency(item.entry_price) : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                ${item.stop_price ? formatCurrency(item.stop_price) : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                ${item.target_price ? formatCurrency(item.target_price) : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${item.company_name || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-white">${item.current_price ? formatCurrency(item.current_price) : 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">${item.daily_change !== null ? formatPercent(item.daily_change) : 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">${item.entry_price ? formatCurrency(item.entry_price) : 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">${item.stop_price ? formatCurrency(item.stop_price) : 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">${item.target_price ? formatCurrency(item.target_price) : 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                 <div class="flex items-center justify-center space-x-2">
-                    <button onclick="editWatchlistItem('${item.symbol}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
+                    <button onclick="editWatchlistItem('${item.symbol}')" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="removeFromWatchlist('${item.symbol}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Remove">
+                    <button onclick="removeFromWatchlist('${item.symbol}')" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Remove">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </td>
         </tr>
-    `).join('');
+        ${hasAnalysis ? `
+        <tr class="analysis-row hidden" id="analysis-${item.symbol}">
+            <td colspan="8" class="px-6 py-4 bg-gray-50 dark:bg-dark-800">
+                <div class="analysis-content">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">AI Analysis for ${item.symbol}</h4>
+                        <button onclick="toggleAnalysis('${item.symbol}')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="formatted-response text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        ${formatAIResponse(item.ai_analysis)}
+                    </div>
+                </div>
+            </td>
+        </tr>
+        ` : ''}
+        `;
+    }).join('');
 }
 
-async function addToWatchlist(symbol, companyName = '', entryPrice = null, stopPrice = null, targetPrice = null, notes = '') {
+async function addToWatchlist(symbol, companyName = '', entryPrice = null, stopPrice = null, targetPrice = null, notes = '', aiAnalysis = '') {
     try {
         const response = await fetch('/api/watchlist', {
             method: 'POST',
@@ -718,7 +743,8 @@ async function addToWatchlist(symbol, companyName = '', entryPrice = null, stopP
                 entry_price: entryPrice,
                 stop_price: stopPrice,
                 target_price: targetPrice,
-                notes: notes
+                notes: notes,
+                ai_analysis: aiAnalysis
             })
         });
         
@@ -809,15 +835,18 @@ async function updateWatchlistItem(symbol, updates) {
     }
 }
 
-// Function to add star button to AI recommendations
+// Function to add star button to AI recommendations with analysis capture
 function addStarToRecommendation(symbol, companyName = '') {
-    return `<button onclick="addRecommendedStock('${symbol}', '${companyName}')" class="star-button text-gray-400 hover:text-yellow-500 transition-colors ml-2" title="Add ${symbol} to watchlist">
+    return `<button onclick="addRecommendedStockWithAnalysis('${symbol}', '${companyName}')" class="star-button text-gray-400 hover:text-yellow-500 transition-colors ml-2" title="Add ${symbol} to watchlist">
         <i class="far fa-star"></i>
     </button>`;
 }
 
-async function addRecommendedStock(symbol, companyName = '') {
-    const result = await addToWatchlist(symbol, companyName);
+async function addRecommendedStockWithAnalysis(symbol, companyName = '') {
+    // Extract analysis for this specific symbol from the current AI response
+    const aiAnalysis = extractAnalysisForSymbol(window.currentAIResponse, symbol);
+    
+    const result = await addToWatchlist(symbol, companyName, null, null, null, '', aiAnalysis);
     if (result.success) {
         // Show success message and update button
         const starButton = event.target.closest('button');
@@ -842,6 +871,66 @@ async function addRecommendedStock(symbol, companyName = '') {
         }
     } else {
         showError(result.message);
+    }
+}
+
+// Function to extract AI analysis for a specific symbol from chat response
+function extractAnalysisForSymbol(chatResponse, symbol) {
+    if (!chatResponse || !symbol) return '';
+
+    // This regex finds all occurrences of what looks like a stock analysis header.
+    const tickerLineRegex = /^(?:\d+\.\s*)?(?:\*\*)?([A-Z]{2,5})\b(?:\*\*)?\s*[-–|].*$/gm;
+
+    const indices = [];
+    let match;
+    // Find all starting positions of ticker analysis blocks.
+    while ((match = tickerLineRegex.exec(chatResponse)) !== null) {
+        indices.push({ symbol: match[1], index: match.index });
+    }
+
+    // Case 1: The response contains one or more clearly-marked analysis blocks.
+    if (indices.length > 0) {
+        for (let i = 0; i < indices.length; i++) {
+            if (indices[i].symbol.toUpperCase() === symbol.toUpperCase()) {
+                const startIndex = indices[i].index;
+                // The analysis block ends at the start of the next block, or the end of the response.
+                const endIndex = (i + 1 < indices.length) ? indices[i + 1].index : chatResponse.length;
+                return chatResponse.substring(startIndex, endIndex).trim();
+            }
+        }
+        
+        // Fallback for this case: we found analysis blocks, but not for the symbol clicked.
+        // This indicates a mismatch. Return nothing to prevent saving incorrect data.
+        return '';
+    }
+
+    // Case 2: No clearly-marked blocks were found. 
+    // Assume the entire response is the analysis for a single stock.
+    return chatResponse;
+}
+
+// Function to toggle analysis display
+function toggleAnalysis(symbol) {
+    const analysisRow = document.getElementById(`analysis-${symbol}`);
+    const symbolButton = document.querySelector(`[data-symbol="${symbol}"] .symbol-expand-btn`);
+    const chevronIcon = symbolButton.querySelector('.fa-chevron-down, .fa-chevron-up');
+    
+    if (analysisRow) {
+        const isHidden = analysisRow.classList.contains('hidden');
+        
+        if (isHidden) {
+            // Show analysis
+            analysisRow.classList.remove('hidden');
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-up ml-2 text-xs text-gray-400';
+            }
+        } else {
+            // Hide analysis
+            analysisRow.classList.add('hidden');
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-down ml-2 text-xs text-gray-400';
+            }
+        }
     }
 }
 

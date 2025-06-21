@@ -151,22 +151,18 @@ The startup scripts will automatically:
 - **Real-time Insights**: Get personalized recommendations based on your portfolio
 - **⭐ One-Click Watchlist**: Click the star icon next to any stock symbol in AI recommendations to instantly add it to your watchlist
 
-### Watchlist Features
-- **Smart Stock Addition**: Click the ⭐ star icon next to any stock symbol in AI recommendations to instantly add it to your watchlist
-- **Real-Time Data**: Live current prices and daily percentage changes for all watchlist items
-- **AI Recommendation Tracking**: Store entry prices, stop losses, and target prices from AI analysis
-- **Interactive Management**: Edit or remove watchlist items with simple click actions
-- **Comprehensive View**: See Symbol, Company Name, Current Price, Daily Change, Entry Price, Stop Price, and Target Price
-- **Persistent Storage**: Your watchlist is saved locally and persists between sessions
-- **Market Data Integration**: Uses Alpaca's real-time market data API for accurate pricing
+### Watchlist & Sorting Features
+- **Smart Stock Addition**: Click the ⭐ star icon next to any AI recommendation to add it to your watchlist.
+- **Expandable AI Analysis**: Click any stock symbol in the watchlist to view the complete AI analysis that was automatically saved with it.
+- **Real-Time Data**: See live prices and daily percentage changes for all watchlist items.
+- **Comprehensive Tracking**: Store and edit entry prices, stop losses, target prices, and notes for each item.
+- **Interactive Sorting**: Click any column header in the holdings or watchlist table (Symbol, Company, Price, etc.) to sort the data instantly.
+- **Persistent Storage**: Your watchlist is saved locally and persists between sessions.
 
-### Table Sorting
-- **Symbol**: Sort alphabetically by stock symbol
-- **Company**: Sort by company name
-- **Quantity**: Sort by number of shares
-- **Current Price**: Sort by current market price
-- **Change**: Sort by percentage change
-- **Value**: Sort by total market value
+#### How to Use the Enhanced Watchlist:
+1. **Adding Stocks**: When the AI provides recommendations, click the ⭐ star button next to any symbol. The stock and its full analysis are automatically added to your watchlist.
+2. **Viewing Analysis**: In the watchlist, click on any stock symbol (marked with a chart icon and dropdown arrow) to expand and view the saved AI analysis.
+3. **Managing Entries**: Edit or remove watchlist items using the action buttons in each row.
 
 ## 🏗️ Project Structure
 

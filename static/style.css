@@ -240,3 +240,194 @@ p {
 .citation-link:hover {
     background-color: rgba(255, 255, 255, 0.4);
 }
+
+/* Custom Styles */
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.slide-in-left { animation: slideInLeft 0.4s ease-out; }
+@keyframes slideInLeft { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+.chat-bubble-user {
+    border-bottom-right-radius: 0;
+    background-color: #2e89ff; /* Blue */
+    color: white;
+}
+
+.chat-bubble-ai {
+    border-bottom-left-radius: 0;
+    background-color: #ffffff; /* White */
+    border: 1px solid #e5e7eb; /* gray-200 */
+}
+
+.chat-bubble-ai .font-medium {
+    color: #1f2937; /* Black text for "Portfolio AI Assistant" title */
+}
+
+.holdings-table tr:nth-child(even) { background-color: #f9fafb; }
+
+.portfolio-card {
+    background: linear-gradient(135deg, #2e89ff 0%, #0ea5e9 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(46, 137, 255, 0.2);
+}
+
+.card-gradient {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+}
+
+.api-card {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* Conversation starter button styles */
+.conversation-starter-btn {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.conversation-starter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.conversation-starter-btn:active {
+    transform: translateY(0);
+}
+
+/* Dark mode support for conversation starters */
+.dark .conversation-starter-btn {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Styling for AI-generated markdown content */
+.formatted-response h1, .formatted-response h2, .formatted-response h3, .formatted-response h4, .formatted-response h5, .formatted-response h6,
+.formatted-response p, .formatted-response li, .formatted-response strong {
+    color: #1f2937; /* Black text */
+}
+
+/* Opportunity/Stock Title headers */
+.formatted-response h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem; /* Larger text */
+    font-weight: 700;   /* Bolder */
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+}
+
+/* Section headers (e.g., Recent News, Primary Catalyst) */
+.formatted-response h4 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4b5563; /* Darker gray for sub-headers */
+}
+
+.formatted-response p {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.formatted-response ul {
+    list-style-position: inside;
+    padding-left: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.formatted-response a {
+    color: #2563eb; /* Blue for links on white background */
+    text-decoration: underline;
+}
+
+.formatted-response a:hover {
+    color: #1d4ed8;
+}
+
+/* Add significant space after a full stock analysis block */
+.formatted-response > ol > li {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px dotted #e5e7eb;
+}
+.formatted-response > ol > li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Watchlist Analysis Styles */
+.analysis-row {
+    transition: all 0.3s ease-in-out;
+}
+
+.analysis-row.hidden {
+    display: none;
+}
+
+.analysis-content {
+    border-left: 3px solid #3b82f6;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+
+.symbol-expand-btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.symbol-expand-btn:hover {
+    transform: translateX(2px);
+}
+
+.star-button.added {
+    color: #f59e0b !important;
+}
+
+.star-button.added:hover {
+    color: #d97706 !important;
+}
+
+/* Dark mode support for analysis */
+.dark .analysis-content {
+    border-left-color: #60a5fa;
+}
+
+.dark .formatted-response h1, 
+.dark .formatted-response h2, 
+.dark .formatted-response h3, 
+.dark .formatted-response h4, 
+.dark .formatted-response h5, 
+.dark .formatted-response h6,
+.dark .formatted-response p, 
+.dark .formatted-response li, 
+.dark .formatted-response strong {
+    color: #f3f4f6; /* Light text for dark mode */
+}
+
+.dark .formatted-response h4 {
+    color: #d1d5db; /* Lighter gray for sub-headers in dark mode */
+}
+
+.dark .formatted-response a {
+    color: #60a5fa; /* Blue for links on dark background */
+}
+
+.dark .formatted-response a:hover {
+    color: #93c5fd;
+}

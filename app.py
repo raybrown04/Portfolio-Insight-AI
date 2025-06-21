@@ -516,6 +516,7 @@ def add_to_watchlist():
         stop_price = data.get('stop_price')
         target_price = data.get('target_price')
         notes = data.get('notes', '')
+        ai_analysis = data.get('ai_analysis', '')  # New field for AI analysis
         
         if not symbol:
             return jsonify({'error': 'Symbol is required'}), 400
@@ -539,6 +540,7 @@ def add_to_watchlist():
             'stop_price': stop_price,
             'target_price': target_price,
             'notes': notes,
+            'ai_analysis': ai_analysis,  # Store the AI analysis
             'added_date': datetime.now().isoformat()
         }
         
@@ -602,6 +604,7 @@ def update_watchlist_item(symbol):
             'stop_price': data.get('stop_price'),
             'target_price': data.get('target_price'),
             'notes': data.get('notes', watchlist[item_index].get('notes', '')),
+            'ai_analysis': data.get('ai_analysis', watchlist[item_index].get('ai_analysis', '')),  # Handle AI analysis updates
             'updated_date': datetime.now().isoformat()
         })
         
